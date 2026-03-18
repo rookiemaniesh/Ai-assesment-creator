@@ -10,15 +10,17 @@ import {
   Settings,
   Sparkles,
 } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface NavItemProps {
   icon: React.ReactNode
   label: string
   active?: boolean
+  badge?: number
   onClick?: () => void
 }
 
-function NavItem({ icon, label, active, onClick }: NavItemProps) {
+function NavItem({ icon, label, active, badge, onClick }: NavItemProps) {
   return (
     <button
       onClick={onClick}
@@ -30,7 +32,12 @@ function NavItem({ icon, label, active, onClick }: NavItemProps) {
       )}
     >
       {icon}
-      <span>{label}</span>
+      <span className="flex-1 text-left">{label}</span>
+      {badge !== undefined && (
+        <span className="flex size-5 items-center justify-center rounded-full bg-orange-500 text-[10px] font-semibold text-white">
+          {badge}
+        </span>
+      )}
     </button>
   )
 }
@@ -41,10 +48,11 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activeItem = "Assignments", onNavChange }: SidebarProps) {
+  const router = useRouter()
   const navItems = [
     { icon: <LayoutGrid className="size-5" />, label: "Home" },
     { icon: <Users className="size-5" />, label: "My Groups" },
-    { icon: <ClipboardList className="size-5" />, label: "Assignments" },
+    { icon: <ClipboardList className="size-5" />, label: "Assignments", badge: 10 },
     { icon: <FileText className="size-5" />, label: "AI Teacher's Toolkit" },
     { icon: <Clock className="size-5" />, label: "My Library" },
   ]
@@ -71,7 +79,10 @@ export function Sidebar({ activeItem = "Assignments", onNavChange }: SidebarProp
 
       {/* Create Assignment Button */}
       <div className="px-4 pb-5">
-        <button className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-zinc-900 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 hover:border-zinc-700">
+        <button
+          onClick={() => router.push("/create-assignment")}
+          className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-zinc-900 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 hover:border-zinc-700"
+        >
           <Sparkles className="size-4" />
           <span>Create Assignment</span>
         </button>
@@ -85,6 +96,7 @@ export function Sidebar({ activeItem = "Assignments", onNavChange }: SidebarProp
             icon={item.icon}
             label={item.label}
             active={activeItem === item.label}
+            badge={item.badge}
             onClick={() => onNavChange?.(item.label)}
           />
         ))}
