@@ -47,7 +47,11 @@ export default function CreateAssignmentPage() {
               <ArrowLeft className="size-4" />
               Previous
             </button>
-            <button className="flex items-center gap-2 rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700">
+            <button
+              type="submit"
+              form="assignment-form"
+              className="flex items-center gap-2 rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700"
+            >
               Next
               <ArrowRight className="size-4" />
             </button>

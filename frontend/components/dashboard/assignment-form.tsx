@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { Upload, Calendar, Plus, X, Minus, Mic } from "lucide-react"
 import { format } from "date-fns"
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
@@ -10,6 +10,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { createAssignment } from "@/lib/api"
 
 interface QuestionRow {
   id: number
@@ -59,9 +60,31 @@ function Stepper({
 
 export function AssignmentForm() {
   const [dragging, setDragging] = useState(false)
+  const [title, setTitle] = useState("")
+  const [subject, setSubject] = useState("")
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
   const [dueDate, setDueDate] = useState<Date>()
   const [additionalInfo, setAdditionalInfo] = useState("")
+  const [clientId, setClientId] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem("vedaai-client-id")
+    if (stored) {
+      setClientId(stored)
+      return
+    }
+
+    const generated =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `client-${Date.now()}`
+    window.localStorage.setItem("vedaai-client-id", generated)
+    setClientId(generated)
+  }, [])
   const [rows, setRows] = useState<QuestionRow[]>([
     { id: 1, type: "Multiple Choice Questions", count: 4, marks: 1 },
     { id: 2, type: "Short Questions", count: 3, marks: 2 },
@@ -95,11 +118,71 @@ export function AssignmentForm() {
     e.preventDefault()
     setDragging(false)
     const file = e.dataTransfer.files[0]
-    if (file) setFileName(file.name)
+    if (file) {
+      setSelectedFile(file)
+      setFileName(file.name)
+    }
   }, [])
 
+  const toBackendQuestionType = (value: string): "mcq" | "short" | "long" | "true-false" | null => {
+    const normalized = value.toLowerCase()
+    if (normalized.includes("multiple choice")) return "mcq"
+    if (normalized.includes("short")) return "short"
+    if (normalized.includes("long")) return "long"
+    if (normalized.includes("true/false") || normalized.includes("true-false")) {
+      return "true-false"
+    }
+    return null
+  }
+
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setError(null)
+    setSuccess(null)
+
+    if (!title.trim() || !subject.trim()) {
+      setError("Title and subject are required.")
+      return
+    }
+
+    if (!dueDate) {
+      setError("Please pick a due date.")
+      return
+    }
+
+    const questionTypes = Array.from(
+      new Set(rows.map((row) => toBackendQuestionType(row.type)).filter(Boolean))
+    ) as Array<"mcq" | "short" | "long" | "true-false">
+
+    if (questionTypes.length === 0) {
+      setError("Please include at least one supported question type.")
+      return
+    }
+
+    try {
+      setSubmitting(true)
+      await createAssignment({
+        title: title.trim(),
+        subject: subject.trim(),
+        dueDate: dueDate.toISOString(),
+        totalMarks,
+        numQuestions: totalQuestions,
+        questionTypes,
+        difficulty: "mixed",
+        additionalInstructions: additionalInfo,
+        clientId: clientId ?? undefined,
+        file: selectedFile ?? undefined,
+      })
+      setSuccess("Assignment created and queued for generation.")
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Submission failed")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
-    <div className="flex flex-col">
+    <form id="assignment-form" onSubmit={onSubmit} className="flex flex-col">
       {/* Page heading */}
       <div className="mb-3 flex items-center gap-2">
         <span className="size-2 rounded-full bg-green-500" />
@@ -122,6 +205,27 @@ export function AssignmentForm() {
           Basic information about your assignment
         </p>
 
+        <div className="mb-3 grid gap-3 md:grid-cols-2">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-foreground">Title</label>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Midterm Physics Paper"
+              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-zinc-300"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-foreground">Subject</label>
+            <input
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="Physics"
+              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-zinc-300"
+            />
+          </div>
+        </div>
+
         {/* File upload */}
         <div
           onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
@@ -138,16 +242,19 @@ export function AssignmentForm() {
           <p className="text-sm font-medium text-foreground">
             {fileName ?? "Choose a file or drag & drop it here"}
           </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">JPEG, PNG, upto 10MB</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">PDF only, up to 10MB</p>
           <label className="mt-3 cursor-pointer rounded-lg border border-zinc-200 bg-white px-4 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-zinc-50">
             Browse Files
             <input
               type="file"
-              accept="image/jpeg,image/png"
+              accept="application/pdf"
               className="sr-only"
               onChange={(e) => {
                 const f = e.target.files?.[0]
-                if (f) setFileName(f.name)
+                if (f) {
+                  setSelectedFile(f)
+                  setFileName(f.name)
+                }
               }}
             />
           </label>
@@ -283,7 +390,10 @@ export function AssignmentForm() {
             </button>
           </div>
         </div>
+        {error ? <p className="mt-3 text-xs text-red-600">{error}</p> : null}
+        {success ? <p className="mt-3 text-xs text-green-600">{success}</p> : null}
       </div>
-    </div>
+      <button type="submit" className="sr-only" disabled={submitting} />
+    </form>
   )
 }

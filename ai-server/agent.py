@@ -19,12 +19,16 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_MODEL   = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
 
 # ── Model ─────────────────────────────────────────────────────────────────────
-_model = GroqModel(GROQ_MODEL, api_key=GROQ_API_KEY)
+if not GROQ_API_KEY:
+    raise RuntimeError("GROQ_API_KEY is missing. Set it in ai-server/.env")
+
+# Newer pydantic-ai versions read auth from the environment (GROQ_API_KEY).
+_model = GroqModel(GROQ_MODEL)
 
 # ── Agent ─────────────────────────────────────────────────────────────────────
 _agent = Agent(
     _model,
-    result_type=QuestionPaper,
+    output_type=QuestionPaper,
     system_prompt=(
         "You are an expert teacher and exam paper setter. "
         "Always respond with valid JSON only — no markdown fences, no extra text. "
@@ -37,4 +41,4 @@ async def generate_question_paper(req: GenerateRequest) -> QuestionPaper:
     """Run the Groq agent and return a validated QuestionPaper."""
     prompt = build_prompt(req)
     result = await _agent.run(prompt)
-    return result.data
+    return result.output

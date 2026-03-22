@@ -4,14 +4,16 @@ import { useState, useRef, useEffect } from "react"
 import { MoreVertical } from "lucide-react"
 
 interface AssignmentCardProps {
+  id: string
   title: string
   assignedOn: string
   dueDate: string
-  onView?: () => void
-  onDelete?: () => void
+  onView?: (id: string) => void
+  onDelete?: (id: string) => void
 }
 
 export function AssignmentCard({
+  id,
   title,
   assignedOn,
   dueDate,
@@ -50,7 +52,7 @@ export function AssignmentCard({
             <div className="absolute right-0 top-full mt-1 z-10 min-w-[140px] rounded-lg border border-zinc-200 bg-white py-1 shadow-lg">
               <button
                 onClick={() => {
-                  onView?.()
+                  onView?.(id)
                   setMenuOpen(false)
                 }}
                 className="flex w-full items-center px-3 py-2 text-sm text-foreground transition-colors hover:bg-zinc-50"
@@ -59,7 +61,7 @@ export function AssignmentCard({
               </button>
               <button
                 onClick={() => {
-                  onDelete?.()
+                  onDelete?.(id)
                   setMenuOpen(false)
                 }}
                 className="flex w-full items-center px-3 py-2 text-sm text-red-600 transition-colors hover:bg-zinc-50"

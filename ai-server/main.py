@@ -28,9 +28,12 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    groq_model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+    groq_key   = os.getenv("GROQ_API_KEY", "")
+    masked_key = f"{groq_key[:8]}…" if len(groq_key) > 8 else "(not set)"
     logger.info("🤖  VedaAI Python AI service starting…")
-    logger.info(f"    Ollama model : {os.getenv('OLLAMA_MODEL', 'llama3.2')}")
-    logger.info(f"    Ollama URL   : {os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434/v1')}")
+    logger.info(f"    Groq model   : {groq_model}")
+    logger.info(f"    Groq API key : {masked_key}")
     yield
     logger.info("👋  AI service shutting down.")
 

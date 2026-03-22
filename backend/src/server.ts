@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import http from 'http';
+import axios from 'axios';
 import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { ExpressAdapter } from '@bull-board/express';
@@ -63,6 +64,15 @@ createWsServer(server);
 
 const start = async () => {
   await connectDB();
+
+  // ── AI service health check ───────────────────────────────────────────────
+  try {
+    const res = await axios.get(`${env.AI_SERVICE_URL}/health`, { timeout: 5000 });
+    console.log(`✅  AI service reachable at ${env.AI_SERVICE_URL} — model: ${res.data?.model ?? 'unknown'}`);
+  } catch {
+    console.warn(`⚠️   AI service NOT reachable at ${env.AI_SERVICE_URL}. Start the Python server or generation jobs will fail.`);
+  }
+
   server.listen(Number(env.PORT), () => {
     console.log(`🚀  Server running at http://localhost:${env.PORT}`);
     console.log(`📋  BullBoard  at http://localhost:${env.PORT}/admin/queues`);

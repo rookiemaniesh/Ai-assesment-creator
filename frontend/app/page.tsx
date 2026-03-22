@@ -1,28 +1,82 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Header } from "@/components/dashboard/header"
 import { AssignmentCard } from "@/components/dashboard/assignment-card"
 import { ChevronDown, Search, Plus } from "lucide-react"
-
-// Mock data for assignments
-const ASSIGNMENTS = [
-  { id: 1, title: "Quiz on Electricity", assignedOn: "20-06-2025", dueDate: "21-06-2025" },
-  { id: 2, title: "Quiz on Electricity", assignedOn: "20-06-2025", dueDate: "21-06-2025" },
-  { id: 3, title: "Quiz on Electricity", assignedOn: "20-06-2025", dueDate: "21-06-2025" },
-  { id: 4, title: "Quiz on Electricity", assignedOn: "20-06-2025", dueDate: "21-06-2025" },
-  { id: 5, title: "Quiz on Electricity", assignedOn: "20-06-2025", dueDate: "21-06-2025" },
-  { id: 6, title: "Quiz on Electricity", assignedOn: "20-06-2025", dueDate: "21-06-2025" },
-  { id: 7, title: "Quiz on Electricity", assignedOn: "20-06-2025", dueDate: "21-06-2025" },
-  { id: 8, title: "Quiz on Electricity", assignedOn: "20-06-2025", dueDate: "21-06-2025" },
-]
+import { WS_BASE_URL, fetchAssignments, type AssignmentListItem } from "@/lib/api"
 
 export default function DashboardPage() {
   const [activeNav, setActiveNav] = useState("Assignments")
   const [searchQuery, setSearchQuery] = useState("")
+  const [assignments, setAssignments] = useState<AssignmentListItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const wsRef = useRef<WebSocket | null>(null)
+  const pollRef = useRef<number | null>(null)
   const router = useRouter()
+
+  const loadAssignments = useCallback(async (isInitialLoad = false) => {
+    try {
+      if (isInitialLoad) setLoading(true)
+      setError(null)
+      const data = await fetchAssignments()
+      setAssignments(data)
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Failed to fetch assignments")
+    } finally {
+      if (isInitialLoad) setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadAssignments(true)
+  }, [loadAssignments])
+
+  useEffect(() => {
+    const clientId = window.localStorage.getItem("vedaai-client-id")
+    if (!clientId) return
+
+    const ws = new WebSocket(`${WS_BASE_URL}?clientId=${encodeURIComponent(clientId)}`)
+    wsRef.current = ws
+
+    ws.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data as string) as { event?: string }
+        if (
+          payload.event === "job:progress" ||
+          payload.event === "job:complete" ||
+          payload.event === "job:failed"
+        ) {
+          void loadAssignments(false)
+        }
+      } catch {
+        // Ignore malformed non-JSON messages
+      }
+    }
+
+    pollRef.current = window.setInterval(() => {
+      void loadAssignments(false)
+    }, 15000)
+
+    return () => {
+      if (pollRef.current) {
+        window.clearInterval(pollRef.current)
+      }
+      if (wsRef.current) {
+        wsRef.current.close()
+      }
+    }
+  }, [loadAssignments])
+
+  const filteredAssignments = assignments.filter((assignment) =>
+    assignment.title.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString("en-GB")
 
   return (
     <div className="relative min-h-screen bg-zinc-200">
@@ -78,18 +132,25 @@ export default function DashboardPage() {
           </div>
 
           {/* Assignment Cards Grid */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {ASSIGNMENTS.map((assignment) => (
-              <AssignmentCard
-                key={assignment.id}
-                title={assignment.title}
-                assignedOn={assignment.assignedOn}
-                dueDate={assignment.dueDate}
-                onView={() => console.log("View", assignment.id)}
-                onDelete={() => console.log("Delete", assignment.id)}
-              />
-            ))}
-          </div>
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Loading assignments...</p>
+          ) : error ? (
+            <p className="text-sm text-red-600">{error}</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {filteredAssignments.map((assignment) => (
+                <AssignmentCard
+                  key={assignment._id}
+                  id={assignment._id}
+                  title={assignment.title}
+                  assignedOn={formatDate(assignment.createdAt)}
+                  dueDate={formatDate(assignment.dueDate)}
+                  onView={(id) => router.push(`/assignments/${id}`)}
+                  onDelete={(id) => console.log("Delete", id)}
+                />
+              ))}
+            </div>
+          )}
         </main>
       </div>
 

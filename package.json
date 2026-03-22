@@ -1,0 +1,16 @@
+{
+  "name": "veda-ai",
+  "version": "1.0.0",
+  "description": "VedaAI monorepo — AI assessment creator",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n ai-server,backend,worker -c blue,cyan,magenta --kill-others-on-fail \"npm run dev:ai\" \"npm run dev:server\" \"npm run dev:worker\"",
+    "dev:ai": "cd ai-server && uvicorn main:app --reload --port 8000",
+    "dev:server": "cd backend && npm run dev",
+    "dev:worker": "cd backend && npm run dev:worker"
+    
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

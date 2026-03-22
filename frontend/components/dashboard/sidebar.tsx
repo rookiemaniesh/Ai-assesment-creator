@@ -79,13 +79,15 @@ export function Sidebar({ activeItem = "Assignments", onNavChange }: SidebarProp
 
       {/* Create Assignment Button */}
       <div className="px-4 pb-5">
-        <button
-          onClick={() => router.push("/create-assignment")}
-          className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-zinc-900 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 hover:border-zinc-700"
-        >
-          <Sparkles className="size-4" />
-          <span>Create Assignment</span>
-        </button>
+        <div className="rounded-full bg-gradient-to-r from-[#e76f51] to-[#f4a261] p-[2px]">
+          <button
+            onClick={() => router.push("/create-assignment")}
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-[#2a2a2a] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a3a3a]"
+          >
+            <Sparkles className="size-4" fill="currentColor" />
+            <span>Create Assignment</span>
+          </button>
+        </div>
       </div>
 
       {/* Navigation */}
