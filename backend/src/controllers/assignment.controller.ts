@@ -7,27 +7,69 @@ import mongoose from 'mongoose';
 
 // ─── Validation schema ───────────────────────────────────────────────────────
 
-const CreateAssignmentSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(200),
-  subject: z.string().min(1, 'Subject is required'),
-  dueDate: z.string().refine((d) => !isNaN(Date.parse(d)), {
-    message: 'Invalid date format',
-  }),
-  totalMarks: z.coerce.number().int().min(1, 'Total marks must be ≥ 1'),
-  numQuestions: z.coerce
-    .number()
-    .int()
-    .min(1, 'Must have at least 1 question')
-    .max(100, 'Cannot exceed 100 questions'),
-  questionTypes: z
-    .array(z.enum(['mcq', 'short', 'long', 'true-false']))
-    .min(1, 'Select at least one question type'),
-  difficulty: z
-    .enum(['easy', 'medium', 'hard', 'mixed'])
-    .default('mixed'),
-  additionalInstructions: z.string().max(1000).optional(),
-  clientId: z.string().optional(), // WebSocket push target
+const QuestionSpecEntrySchema = z.object({
+  questionType: z.enum(['mcq', 'short', 'long', 'true-false']),
+  count: z.coerce.number().int().min(1),
+  marksPerQuestion: z.coerce.number().int().min(1),
 });
+
+const CreateAssignmentSchema = z
+  .object({
+    title: z.string().min(1, 'Title is required').max(200),
+    subject: z.string().min(1, 'Subject is required'),
+    dueDate: z.string().refine((d) => !isNaN(Date.parse(d)), {
+      message: 'Invalid date format',
+    }),
+    totalMarks: z.coerce.number().int().min(1, 'Total marks must be ≥ 1'),
+    numQuestions: z.coerce
+      .number()
+      .int()
+      .min(1, 'Must have at least 1 question')
+      .max(100, 'Cannot exceed 100 questions'),
+    questionTypes: z
+      .array(z.enum(['mcq', 'short', 'long', 'true-false']))
+      .min(1, 'Select at least one question type'),
+    difficulty: z
+      .enum(['easy', 'medium', 'hard', 'mixed'])
+      .default('mixed'),
+    additionalInstructions: z.string().max(1000).optional(),
+    clientId: z.string().optional(), // WebSocket push target
+    /** JSON array from multipart: exact counts/marks per type from the form */
+    questionSpec: z.preprocess((raw) => {
+      if (raw == null || raw === '') return undefined;
+      if (typeof raw === 'string') {
+        try {
+          return JSON.parse(raw) as unknown;
+        } catch {
+          return undefined;
+        }
+      }
+      if (Array.isArray(raw)) return raw;
+      return undefined;
+    }, z.array(QuestionSpecEntrySchema).optional()),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.questionSpec?.length) return;
+    const n = data.questionSpec.reduce((s, x) => s + x.count, 0);
+    const m = data.questionSpec.reduce(
+      (s, x) => s + x.count * x.marksPerQuestion,
+      0
+    );
+    if (n !== data.numQuestions) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `questionSpec counts (${n}) must match numQuestions (${data.numQuestions})`,
+        path: ['questionSpec'],
+      });
+    }
+    if (m !== data.totalMarks) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `questionSpec marks (${m}) must match totalMarks (${data.totalMarks})`,
+        path: ['questionSpec'],
+      });
+    }
+  });
 
 // ─── Controllers ─────────────────────────────────────────────────────────────
 

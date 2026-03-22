@@ -144,15 +144,21 @@ export function AssignmentForm() {
     }
   }, [])
 
-  const toBackendQuestionType = (value: string): "mcq" | "short" | "long" | "true-false" | null => {
+  /** Maps UI labels to API / AI question types (including diagram/numerical/fill). */
+  const toBackendQuestionType = (
+    value: string
+  ): "mcq" | "short" | "long" | "true-false" => {
     const normalized = value.toLowerCase()
     if (normalized.includes("multiple choice")) return "mcq"
-    if (normalized.includes("short")) return "short"
-    if (normalized.includes("long")) return "long"
     if (normalized.includes("true/false") || normalized.includes("true-false")) {
       return "true-false"
     }
-    return null
+    if (normalized.includes("long")) return "long"
+    if (normalized.includes("diagram") || normalized.includes("graph")) return "long"
+    if (normalized.includes("short")) return "short"
+    if (normalized.includes("numerical")) return "short"
+    if (normalized.includes("fill")) return "short"
+    return "short"
   }
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -169,14 +175,14 @@ export function AssignmentForm() {
       return
     }
 
+    const questionSpec = rows.map((row) => ({
+      questionType: toBackendQuestionType(row.type),
+      count: row.count,
+      marksPerQuestion: row.marks,
+    }))
     const questionTypes = Array.from(
-      new Set(rows.map((row) => toBackendQuestionType(row.type)).filter(Boolean))
+      new Set(questionSpec.map((s) => s.questionType))
     ) as Array<"mcq" | "short" | "long" | "true-false">
-
-    if (questionTypes.length === 0) {
-      setError("Please include at least one supported question type.")
-      return
-    }
 
     try {
       setSubmitting(true)
@@ -187,6 +193,7 @@ export function AssignmentForm() {
         totalMarks,
         numQuestions: totalQuestions,
         questionTypes,
+        questionSpec,
         difficulty: "mixed",
         additionalInstructions: additionalInfo,
         clientId: clientId ?? undefined,

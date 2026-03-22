@@ -6,6 +6,13 @@ export type QuestionType = 'mcq' | 'short' | 'long' | 'true-false';
 export type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed';
 export type AssignmentStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
+/** Per-row breakdown from the create form (counts and marks each) — drives AI generation. */
+export interface QuestionSpecEntry {
+  questionType: QuestionType;
+  count: number;
+  marksPerQuestion: number;
+}
+
 export interface IAssignment extends Document {
   /** Owner profile (teacher / school account) */
   profileId: Types.ObjectId;
@@ -15,6 +22,8 @@ export interface IAssignment extends Document {
   totalMarks: number;
   numQuestions: number;
   questionTypes: QuestionType[];
+  /** When set, the AI must follow these counts and marks per question exactly. */
+  questionSpec?: QuestionSpecEntry[];
   difficulty: Difficulty;
   additionalInstructions?: string;
   fileUrl?: string;       // path to uploaded PDF on disk
@@ -70,6 +79,20 @@ const AssignmentSchema = new Schema<IAssignment>(
         validator: (arr: string[]) => arr.length > 0,
         message: 'At least one question type must be selected',
       },
+    },
+    questionSpec: {
+      type: [
+        {
+          questionType: {
+            type: String,
+            enum: ['mcq', 'short', 'long', 'true-false'],
+            required: true,
+          },
+          count: { type: Number, required: true, min: 1 },
+          marksPerQuestion: { type: Number, required: true, min: 1 },
+        },
+      ],
+      required: false,
     },
     difficulty: {
       type: String,

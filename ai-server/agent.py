@@ -31,8 +31,9 @@ _agent = Agent(
     output_type=QuestionPaper,
     system_prompt=(
         "You are an expert teacher and exam paper setter. "
-        "Always respond with valid JSON only — no markdown fences, no extra text. "
-        "Follow the exact JSON structure the user specifies."
+        "You MUST obey the user's question counts, section layout, marks per question, and total marks exactly. "
+        "Never add or remove questions relative to the specification. "
+        "Output only structured data matching the QuestionPaper schema — no markdown fences, no prose outside JSON."
     ),
 )
 

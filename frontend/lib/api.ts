@@ -49,6 +49,12 @@ export async function fetchAssignments(): Promise<AssignmentListItem[]> {
   return json.data ?? []
 }
 
+export type QuestionSpecEntry = {
+  questionType: "mcq" | "short" | "long" | "true-false"
+  count: number
+  marksPerQuestion: number
+}
+
 export type CreateAssignmentPayload = {
   title: string
   subject: string
@@ -56,6 +62,8 @@ export type CreateAssignmentPayload = {
   totalMarks: number
   numQuestions: number
   questionTypes: Array<"mcq" | "short" | "long" | "true-false">
+  /** Exact counts and marks per question — must match totalMarks / numQuestions */
+  questionSpec: QuestionSpecEntry[]
   difficulty: "easy" | "medium" | "hard" | "mixed"
   additionalInstructions?: string
   clientId?: string
@@ -78,6 +86,7 @@ export async function createAssignment(
   formData.append("totalMarks", String(payload.totalMarks))
   formData.append("numQuestions", String(payload.numQuestions))
   formData.append("difficulty", payload.difficulty)
+  formData.append("questionSpec", JSON.stringify(payload.questionSpec))
   payload.questionTypes.forEach((questionType) =>
     formData.append("questionTypes", questionType)
   )

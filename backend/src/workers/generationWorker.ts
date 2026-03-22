@@ -2,6 +2,7 @@ import { Worker, Job } from 'bullmq';
 import axios from 'axios';
 import { bullMQConnection } from '../config/redis';
 import { Assignment } from '../models/Assignment';
+import { Profile } from '../models/Profile';
 import { QuestionPaper } from '../models/QuestionPaper';
 import { emitToClient } from '../ws/wsServer';
 import { env } from '../config/env';
@@ -36,15 +37,24 @@ const worker = new Worker<AssignmentJobData, void, AssignmentJobName>(
       });
     }
 
+    const profile = await Profile.findById(assignment.profileId).select(
+      'schoolName schoolAddress'
+    );
+
     // 2. Call PydanticAI microservice
     const response = await axios.post(
       `${env.AI_SERVICE_URL}/generate`,
       {
         title: assignment.title,
         subject: assignment.subject,
+        schoolName: profile?.schoolName ?? '',
+        schoolAddress: profile?.schoolAddress ?? '',
         totalMarks: assignment.totalMarks,
         numQuestions: assignment.numQuestions,
         questionTypes: assignment.questionTypes,
+        ...(assignment.questionSpec?.length
+          ? { questionSpec: assignment.questionSpec }
+          : {}),
         difficulty: assignment.difficulty,
         additionalInstructions: assignment.additionalInstructions ?? '',
         fileText: assignment.fileText ?? '',
