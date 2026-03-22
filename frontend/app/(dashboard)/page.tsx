@@ -2,13 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Header } from "@/components/dashboard/header"
 import { AssignmentCard } from "@/components/dashboard/assignment-card"
 import { ChevronDown, Search, Plus } from "lucide-react"
 import { WS_BASE_URL, fetchAssignments, type AssignmentListItem } from "@/lib/api"
+import { useProfile } from "@/hooks/use-profile"
 
 export default function DashboardPage() {
+  const { profile, profileLoading } = useProfile()
   const [activeNav, setActiveNav] = useState("Assignments")
   const [searchQuery, setSearchQuery] = useState("")
   const [assignments, setAssignments] = useState<AssignmentListItem[]>([])
@@ -81,12 +84,22 @@ export default function DashboardPage() {
   return (
     <div className="relative min-h-screen bg-zinc-200">
       {/* Floating Sidebar — always visible, overlays the main content */}
-      <Sidebar activeItem={activeNav} onNavChange={setActiveNav} />
+      <Sidebar
+        activeItem={activeNav}
+        onNavChange={setActiveNav}
+        schoolName={profile?.schoolName}
+        schoolAddress={profile?.schoolAddress}
+        profileLoading={profileLoading}
+      />
 
       {/* Main content — full width, sidebar floats on top */}
       <div className="min-h-screen pl-[284px] pr-4 pt-4 pb-24">
         {/* Floating Header */}
-        <Header title="Assignment" />
+        <Header
+          title="Assignment"
+          userDisplayName={profile?.username}
+          profileLoading={profileLoading}
+        />
 
         {/* Content Area */}
         {loading ? (
@@ -94,8 +107,14 @@ export default function DashboardPage() {
             <p className="text-sm text-muted-foreground">Loading...</p>
           </main>
         ) : error ? (
-          <main className="mt-4 flex h-[calc(100vh-140px)] items-center justify-center rounded-2xl bg-zinc-100 p-5">
-            <p className="text-sm text-red-600">{error}</p>
+          <main className="mt-4 flex h-[calc(100vh-140px)] flex-col items-center justify-center gap-3 rounded-2xl bg-zinc-100 p-5">
+            <p className="text-sm text-red-600 text-center">{error}</p>
+            <Link
+              href="/login"
+              className="rounded-full bg-zinc-900 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+            >
+              Sign in
+            </Link>
           </main>
         ) : assignments.length === 0 ? (
           <main className="mt-4 flex max-h-screen flex-col items-center justify-center rounded-2xl bg-[#EBEBEB] p-5">
@@ -194,13 +213,16 @@ export default function DashboardPage() {
                   title={assignment.title}
                   assignedOn={formatDate(assignment.createdAt)}
                   dueDate={formatDate(assignment.dueDate)}
+                  status={assignment.status}
                   onView={(id) => router.push(`/assignments/${id}`)}
                   onDelete={(id) => console.log("Delete", id)}
                 />
               ))}
               {filteredAssignments.length === 0 && (
                 <div className="col-span-1 md:col-span-2 py-10 text-center">
-                  <p className="text-sm text-zinc-500">No assignments found matching "{searchQuery}"</p>
+                  <p className="text-sm text-zinc-500">
+                    No assignments found matching &quot;{searchQuery}&quot;
+                  </p>
                 </div>
               )}
             </div>

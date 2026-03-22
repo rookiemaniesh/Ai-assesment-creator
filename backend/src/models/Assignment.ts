@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -7,6 +7,8 @@ export type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed';
 export type AssignmentStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
 export interface IAssignment extends Document {
+  /** Owner profile (teacher / school account) */
+  profileId: Types.ObjectId;
   title: string;
   subject: string;
   dueDate: Date;
@@ -28,6 +30,12 @@ export interface IAssignment extends Document {
 
 const AssignmentSchema = new Schema<IAssignment>(
   {
+    profileId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Profile',
+      required: [true, 'Profile is required'],
+      index: true,
+    },
     title: {
       type: String,
       required: [true, 'Title is required'],
@@ -87,5 +95,6 @@ const AssignmentSchema = new Schema<IAssignment>(
 
 // Index for fast status-based queries
 AssignmentSchema.index({ status: 1, createdAt: -1 });
+AssignmentSchema.index({ profileId: 1, createdAt: -1 });
 
 export const Assignment = mongoose.model<IAssignment>('Assignment', AssignmentSchema);

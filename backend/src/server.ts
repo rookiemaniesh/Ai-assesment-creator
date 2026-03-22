@@ -11,6 +11,7 @@ import { connectDB } from './config/db';
 import { assignmentQueue } from './queues/assignmentQueue';
 import { createWsServer } from './ws/wsServer';
 import assignmentRoutes from './routes/assignment.routes';
+import authRoutes from './routes/auth.routes';
 
 // ─── App setup ────────────────────────────────────────────────────────────────
 
@@ -37,6 +38,7 @@ app.use('/admin/queues', serverAdapter.getRouter());
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
 
+app.use('/api/auth', authRoutes);
 app.use('/api/assignments', assignmentRoutes);
 
 // Health check

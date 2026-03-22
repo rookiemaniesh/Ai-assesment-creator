@@ -5,14 +5,22 @@ import { Sidebar } from "@/components/dashboard/sidebar"
 import { Header } from "@/components/dashboard/header"
 import { AssignmentForm } from "@/components/dashboard/assignment-form"
 import { ArrowLeft, ArrowRight } from "lucide-react"
+import { useProfile } from "@/hooks/use-profile"
 
 export default function CreateAssignmentPage() {
   const router = useRouter()
+  const { profile, profileLoading } = useProfile()
 
   return (
     <div className="relative bg-gray-200 min-h-full">
       {/* Floating Sidebar — fixed so it stays while page scrolls */}
-      <Sidebar activeItem="Assignments" onNavChange={() => { }} />
+      <Sidebar
+        activeItem="Assignments"
+        onNavChange={() => {}}
+        schoolName={profile?.schoolName}
+        schoolAddress={profile?.schoolAddress}
+        profileLoading={profileLoading}
+      />
 
       {/* Sticky top bar — header stays fixed while page scrolls */}
       <div className="sticky top-0 z-20 pl-[284px] pr-4 pt-4 pb-2  backdrop-blur-md">
@@ -20,6 +28,8 @@ export default function CreateAssignmentPage() {
           title="Assignment"
           showBackButton
           onBack={() => router.push("/")}
+          userDisplayName={profile?.username}
+          profileLoading={profileLoading}
         />
       </div>
 

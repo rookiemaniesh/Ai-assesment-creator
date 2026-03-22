@@ -19,6 +19,8 @@ export interface ISection {
 }
 
 export interface IQuestionPaper extends Document {
+  /** Same as owning assignment — denormalized for queries */
+  profileId: Types.ObjectId;
   assignmentId: Types.ObjectId;
   sections: ISection[];
   totalMarks: number;
@@ -60,6 +62,12 @@ const SectionSchema = new Schema<ISection>(
 
 const QuestionPaperSchema = new Schema<IQuestionPaper>(
   {
+    profileId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Profile',
+      required: true,
+      index: true,
+    },
     assignmentId: {
       type: Schema.Types.ObjectId,
       ref: 'Assignment',

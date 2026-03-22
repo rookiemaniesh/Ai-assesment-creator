@@ -78,6 +78,7 @@ const worker = new Worker<AssignmentJobData, void, AssignmentJobName>(
     };
 
     await QuestionPaper.create({
+      profileId: assignment.profileId,
       assignmentId: assignment._id,
       sections: paperData.sections,
       totalMarks: paperData.totalMarks,

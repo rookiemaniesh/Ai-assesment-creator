@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { Upload, Calendar, Plus, X, Minus, Mic } from "lucide-react"
 import { format } from "date-fns"
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
@@ -18,6 +19,13 @@ interface QuestionRow {
   count: number
   marks: number
 }
+
+const DEFAULT_ROWS: QuestionRow[] = [
+  { id: 1, type: "Multiple Choice Questions", count: 4, marks: 1 },
+  { id: 2, type: "Short Questions", count: 3, marks: 2 },
+  { id: 3, type: "Diagram/Graph-Based Questions", count: 5, marks: 5 },
+  { id: 4, type: "Numerical Problems", count: 5, marks: 5 },
+]
 
 const QUESTION_TYPES = [
   "Multiple Choice Questions",
@@ -59,6 +67,8 @@ function Stepper({
 }
 
 export function AssignmentForm() {
+  const router = useRouter()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
   const [title, setTitle] = useState("")
   const [subject, setSubject] = useState("")
@@ -69,7 +79,6 @@ export function AssignmentForm() {
   const [clientId, setClientId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
 
   useEffect(() => {
     const stored = window.localStorage.getItem("vedaai-client-id")
@@ -85,12 +94,21 @@ export function AssignmentForm() {
     window.localStorage.setItem("vedaai-client-id", generated)
     setClientId(generated)
   }, [])
-  const [rows, setRows] = useState<QuestionRow[]>([
-    { id: 1, type: "Multiple Choice Questions", count: 4, marks: 1 },
-    { id: 2, type: "Short Questions", count: 3, marks: 2 },
-    { id: 3, type: "Diagram/Graph-Based Questions", count: 5, marks: 5 },
-    { id: 4, type: "Numerical Problems", count: 5, marks: 5 },
-  ])
+  const [rows, setRows] = useState<QuestionRow[]>(() =>
+    DEFAULT_ROWS.map((r) => ({ ...r }))
+  )
+
+  const resetForm = useCallback(() => {
+    setTitle("")
+    setSubject("")
+    setSelectedFile(null)
+    setFileName(null)
+    if (fileInputRef.current) fileInputRef.current.value = ""
+    setDueDate(undefined)
+    setAdditionalInfo("")
+    setError(null)
+    setRows(DEFAULT_ROWS.map((r, i) => ({ ...r, id: i + 1 })))
+  }, [])
 
   const totalQuestions = rows.reduce((s, r) => s + r.count, 0)
   const totalMarks = rows.reduce((s, r) => s + r.count * r.marks, 0)
@@ -138,7 +156,6 @@ export function AssignmentForm() {
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
-    setSuccess(null)
 
     if (!title.trim() || !subject.trim()) {
       setError("Title and subject are required.")
@@ -173,7 +190,9 @@ export function AssignmentForm() {
         clientId: clientId ?? undefined,
         file: selectedFile ?? undefined,
       })
-      setSuccess("Assignment created and queued for generation.")
+      resetForm()
+      router.push("/")
+      router.refresh()
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Submission failed")
     } finally {
@@ -246,6 +265,7 @@ export function AssignmentForm() {
           <label className="mt-3 cursor-pointer rounded-lg border border-zinc-200 bg-white px-4 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-zinc-50">
             Browse Files
             <input
+              ref={fileInputRef}
               type="file"
               accept="application/pdf"
               className="sr-only"
@@ -391,7 +411,6 @@ export function AssignmentForm() {
           </div>
         </div>
         {error ? <p className="mt-3 text-xs text-red-600">{error}</p> : null}
-        {success ? <p className="mt-3 text-xs text-green-600">{success}</p> : null}
       </div>
       <button type="submit" className="sr-only" disabled={submitting} />
     </form>

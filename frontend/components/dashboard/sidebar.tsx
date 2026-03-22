@@ -45,9 +45,26 @@ function NavItem({ icon, label, active, badge, onClick }: NavItemProps) {
 interface SidebarProps {
   activeItem?: string
   onNavChange?: (item: string) => void
+  /** From DB (`Profile.schoolName`) */
+  schoolName?: string | null
+  /** From DB (`Profile.schoolAddress`) */
+  schoolAddress?: string | null
+  /** While `/api/auth/me` is loading */
+  profileLoading?: boolean
 }
 
-export function Sidebar({ activeItem = "Assignments", onNavChange }: SidebarProps) {
+function schoolInitial(name: string | null | undefined): string {
+  if (!name?.trim()) return "?"
+  return name.trim().charAt(0).toUpperCase()
+}
+
+export function Sidebar({
+  activeItem = "Assignments",
+  onNavChange,
+  schoolName,
+  schoolAddress,
+  profileLoading = false,
+}: SidebarProps) {
   const router = useRouter()
   const navItems = [
     { icon: <LayoutGrid className="size-5" />, label: "Home" },
@@ -114,14 +131,24 @@ export function Sidebar({ activeItem = "Assignments", onNavChange }: SidebarProp
         />
       </div>
 
-      {/* School Card */}
+      {/* School Card — name & address from profile API */}
       <div className="mx-3 mb-4 flex items-center gap-3 rounded-xl bg-zinc-200 p-3">
         <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-amber-200">
-          <span className="text-base font-bold text-amber-700">D</span>
+          <span className="text-base font-bold text-amber-700">
+            {schoolInitial(schoolName ?? undefined)}
+          </span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="truncate text-sm font-semibold text-black">Delhi Public School</p>
-          <p className="truncate text-xs text-zinc-700">Bokaro Steel City</p>
+          <p className="truncate text-sm font-semibold text-black">
+            {profileLoading
+              ? "…"
+              : schoolName?.trim() || "School name"}
+          </p>
+          <p className="truncate text-xs text-zinc-700" title={schoolAddress ?? undefined}>
+            {profileLoading
+              ? "Loading address…"
+              : schoolAddress?.trim() || "Sign in to show your school"}
+          </p>
         </div>
       </div>
     </aside>

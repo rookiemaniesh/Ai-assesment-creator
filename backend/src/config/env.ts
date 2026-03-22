@@ -9,6 +9,11 @@ const envSchema = z.object({
   REDIS_URL: z.string().default('redis://localhost:6379'),
   AI_SERVICE_URL: z.string().default('http://localhost:8000'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  /** Used to sign JWTs for `/api/auth` — set a long random string in production */
+  JWT_SECRET: z
+    .string()
+    .min(16, 'JWT_SECRET must be at least 16 characters')
+    .default('veda-ai-dev-jwt-secret-change-in-prod'),
 });
 
 const parsed = envSchema.safeParse(process.env);

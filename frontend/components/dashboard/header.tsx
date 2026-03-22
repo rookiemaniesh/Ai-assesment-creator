@@ -6,9 +6,26 @@ interface HeaderProps {
   title: string
   showBackButton?: boolean
   onBack?: () => void
+  /** Logged-in user display name from DB (`Profile.username`) */
+  userDisplayName?: string | null
+  /** While profile is loading from `/api/auth/me` */
+  profileLoading?: boolean
 }
 
-export function Header({ title, showBackButton = true, onBack }: HeaderProps) {
+function displayInitial(name: string | null | undefined): string {
+  if (!name?.trim()) return "?"
+  return name.trim().charAt(0).toUpperCase()
+}
+
+export function Header({
+  title,
+  showBackButton = true,
+  onBack,
+  userDisplayName,
+  profileLoading = false,
+}: HeaderProps) {
+  const label =
+    profileLoading ? "…" : userDisplayName?.trim() || "Guest"
   return (
     <header className="flex h-14 items-center justify-between rounded-2xl bg-white px-5 shadow-sm">
       {/* Left Section */}
@@ -36,12 +53,19 @@ export function Header({ title, showBackButton = true, onBack }: HeaderProps) {
         </button>
 
         {/* User Profile */}
-        <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-secondary">
+        <button
+          type="button"
+          className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-secondary"
+        >
           <div className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-amber-200">
-            <span className="text-sm font-semibold text-amber-700">J</span>
+            <span className="text-sm font-semibold text-amber-700">
+              {displayInitial(userDisplayName ?? undefined)}
+            </span>
           </div>
-          <span className="text-sm font-medium text-foreground">John Doe</span>
-          <ChevronDown className="size-4 text-muted-foreground" />
+          <span className="max-w-[140px] truncate text-sm font-medium text-foreground">
+            {label}
+          </span>
+          <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
         </button>
       </div>
     </header>

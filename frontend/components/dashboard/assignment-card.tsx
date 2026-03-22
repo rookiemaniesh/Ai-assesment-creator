@@ -2,12 +2,22 @@
 
 import { useState, useRef, useEffect } from "react"
 import { MoreVertical } from "lucide-react"
+import { cn } from "@/lib/utils"
+
+export type AssignmentStatus = "pending" | "processing" | "completed" | "failed"
+
+function statusDotTitle(status: AssignmentStatus): string {
+  if (status === "completed") return "Generated — ready to view"
+  if (status === "pending" || status === "processing") return "In generation"
+  return "Generation failed"
+}
 
 interface AssignmentCardProps {
   id: string
   title: string
   assignedOn: string
   dueDate: string
+  status: AssignmentStatus
   onView?: (id: string) => void
   onDelete?: (id: string) => void
 }
@@ -17,9 +27,11 @@ export function AssignmentCard({
   title,
   assignedOn,
   dueDate,
+  status,
   onView,
   onDelete,
 }: AssignmentCardProps) {
+  const canView = status === "completed"
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -38,7 +50,20 @@ export function AssignmentCard({
     <div className="relative rounded-xl bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
       {/* Title and Menu */}
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-base font-semibold text-foreground">{title}</h3>
+        <div className="flex min-w-0 flex-1 items-start gap-2">
+          <span
+            title={statusDotTitle(status)}
+            className={cn(
+              "mt-1.5 size-2.5 shrink-0 cursor-help rounded-full ring-2 ring-white",
+              status === "completed" && "bg-green-500",
+              status === "pending" && "bg-amber-400",
+              status === "processing" && "animate-pulse bg-amber-400",
+              status === "failed" && "bg-red-500"
+            )}
+            aria-label={statusDotTitle(status)}
+          />
+          <h3 className="min-w-0 flex-1 text-base font-semibold text-foreground">{title}</h3>
+        </div>
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setMenuOpen(!menuOpen)}
@@ -51,11 +76,20 @@ export function AssignmentCard({
           {menuOpen && (
             <div className="absolute right-0 top-full mt-1 z-10 min-w-[140px] rounded-lg border border-zinc-200 bg-white py-1 shadow-lg">
               <button
+                type="button"
+                disabled={!canView}
+                title={canView ? undefined : "Available when generation finishes"}
                 onClick={() => {
+                  if (!canView) return
                   onView?.(id)
                   setMenuOpen(false)
                 }}
-                className="flex w-full items-center px-3 py-2 text-sm text-foreground transition-colors hover:bg-zinc-50"
+                className={cn(
+                  "flex w-full items-center px-3 py-2 text-sm text-left transition-colors",
+                  canView
+                    ? "text-foreground hover:bg-zinc-50"
+                    : "cursor-not-allowed text-zinc-400"
+                )}
               >
                 View Assignment
               </button>

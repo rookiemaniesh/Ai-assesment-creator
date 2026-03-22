@@ -7,8 +7,11 @@ import {
   getAssignment,
   getAssignmentResult,
 } from '../controllers/assignment.controller';
+import { authenticate } from '../middleware/auth';
 
 const router = Router();
+
+router.use(authenticate);
 
 // ─── Multer config ────────────────────────────────────────────────────────────
 

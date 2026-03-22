@@ -65,8 +65,14 @@ export async function createAssignment(
     }
 
     // Persist assignment
+    if (!req.profileId) {
+      res.status(401).json({ success: false, message: 'Not authenticated' });
+      return;
+    }
+
     const assignment = await Assignment.create({
       ...rest,
+      profileId: req.profileId,
       dueDate: new Date(dueDate),
       status: 'pending',
       fileUrl,
@@ -109,17 +115,24 @@ export async function listAssignments(
   next: NextFunction
 ): Promise<void> {
   try {
+    if (!req.profileId) {
+      res.status(401).json({ success: false, message: 'Not authenticated' });
+      return;
+    }
+
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(50, parseInt(req.query.limit as string) || 10);
     const skip = (page - 1) * limit;
 
+    const filter = { profileId: req.profileId };
+
     const [assignments, total] = await Promise.all([
-      Assignment.find()
+      Assignment.find(filter)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .select('-fileText'), // exclude large text blob from list
-      Assignment.countDocuments(),
+      Assignment.countDocuments(filter),
     ]);
 
     res.json({
@@ -158,6 +171,11 @@ export async function getAssignment(
       return;
     }
 
+    if (!req.profileId || assignment.profileId.toString() !== req.profileId.toString()) {
+      res.status(403).json({ success: false, message: 'Forbidden' });
+      return;
+    }
+
     res.json({ success: true, data: assignment });
   } catch (error) {
     next(error);
@@ -182,6 +200,11 @@ export async function getAssignmentResult(
     const assignment = await Assignment.findById(req.params.id);
     if (!assignment) {
       res.status(404).json({ success: false, message: 'Assignment not found' });
+      return;
+    }
+
+    if (!req.profileId || assignment.profileId.toString() !== req.profileId.toString()) {
+      res.status(403).json({ success: false, message: 'Forbidden' });
       return;
     }
 

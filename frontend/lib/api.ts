@@ -1,4 +1,13 @@
-const DEFAULT_API_BASE_URL = "http://localhost:5000"
+const DEFAULT_API_BASE_URL = "http://localhost:5001"
+
+export const AUTH_TOKEN_KEY = "vedaai-token"
+
+function authHeaders(): HeadersInit {
+  if (typeof window === "undefined") return {}
+  const token = window.localStorage.getItem(AUTH_TOKEN_KEY)
+  if (!token) return {}
+  return { Authorization: `Bearer ${token}` }
+}
 
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL?.trim() || DEFAULT_API_BASE_URL
@@ -13,6 +22,7 @@ type ApiEnvelope<T> = {
 
 export type AssignmentListItem = {
   _id: string
+  profileId: string
   title: string
   subject: string
   dueDate: string
@@ -24,10 +34,15 @@ export async function fetchAssignments(): Promise<AssignmentListItem[]> {
   const res = await fetch(`${API_BASE_URL}/api/assignments`, {
     method: "GET",
     cache: "no-store",
+    headers: { ...authHeaders() },
   })
 
   if (!res.ok) {
     throw new Error("Failed to load assignments")
+  }
+
+  if (res.status === 401) {
+    throw new Error("Please sign in to view assignments.")
   }
 
   const json = (await res.json()) as ApiEnvelope<AssignmentListItem[]>
@@ -81,6 +96,7 @@ export async function createAssignment(
 
   const res = await fetch(`${API_BASE_URL}/api/assignments`, {
     method: "POST",
+    headers: { ...authHeaders() },
     body: formData,
   })
 
@@ -113,6 +129,7 @@ export async function fetchAssignment(id: string): Promise<AssignmentDetail> {
   const res = await fetch(`${API_BASE_URL}/api/assignments/${id}`, {
     method: "GET",
     cache: "no-store",
+    headers: { ...authHeaders() },
   })
 
   if (!res.ok) {
@@ -125,6 +142,7 @@ export async function fetchAssignment(id: string): Promise<AssignmentDetail> {
 
 export type QuestionPaperResult = {
   _id: string
+  profileId: string
   assignmentId: string
   sections: Array<{
     label: string
@@ -146,6 +164,7 @@ export async function fetchAssignmentResult(id: string): Promise<QuestionPaperRe
   const res = await fetch(`${API_BASE_URL}/api/assignments/${id}/result`, {
     method: "GET",
     cache: "no-store",
+    headers: { ...authHeaders() },
   })
 
   if (!res.ok) {
@@ -160,4 +179,101 @@ export async function fetchAssignmentResult(id: string): Promise<QuestionPaperRe
 
   const json = (await res.json()) as ApiEnvelope<QuestionPaperResult>
   return json.data
+}
+
+// ─── Auth (JWT) ───────────────────────────────────────────────────────────────
+
+export type ProfilePublic = {
+  id: string
+  username: string
+  schoolName: string
+  schoolAddress: string
+}
+
+export function setAuthToken(token: string | null): void {
+  if (typeof window === "undefined") return
+  if (token) {
+    window.localStorage.setItem(AUTH_TOKEN_KEY, token)
+  } else {
+    window.localStorage.removeItem(AUTH_TOKEN_KEY)
+  }
+}
+
+export async function registerAccount(input: {
+  username: string
+  schoolName: string
+  schoolAddress: string
+  password: string
+}): Promise<{ token: string; profile: ProfilePublic }> {
+  const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  })
+  const json = (await res.json()) as
+    | { success: true; data: { token: string; profile: ProfilePublic } }
+    | { success: false; message?: string; errors?: Record<string, string[]> }
+
+  if (!res.ok || !json.success) {
+    const msg =
+      ("errors" in json && json.errors && Object.values(json.errors).flat().join(", ")) ||
+      ("message" in json && json.message) ||
+      "Registration failed"
+    throw new Error(msg)
+  }
+  setAuthToken(json.data.token)
+  return json.data
+}
+
+export async function loginAccount(input: {
+  username: string
+  password: string
+}): Promise<{ token: string; profile: ProfilePublic }> {
+  const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  })
+  const json = (await res.json()) as
+    | { success: true; data: { token: string; profile: ProfilePublic } }
+    | { success: false; message?: string; errors?: Record<string, string[]> }
+
+  if (!res.ok || !json.success) {
+    const msg =
+      ("errors" in json && json.errors && Object.values(json.errors).flat().join(", ")) ||
+      ("message" in json && json.message) ||
+      "Login failed"
+    throw new Error(msg)
+  }
+  setAuthToken(json.data.token)
+  return json.data
+}
+
+export function logoutAccount(): void {
+  setAuthToken(null)
+}
+
+export async function fetchMe(): Promise<ProfilePublic> {
+  const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
+    method: "GET",
+    cache: "no-store",
+    headers: { ...authHeaders() },
+  })
+  if (res.status === 401) {
+    throw new Error("Not signed in")
+  }
+  if (!res.ok) {
+    throw new Error("Failed to load profile")
+  }
+  const json = (await res.json()) as ApiEnvelope<ProfilePublic>
+  return json.data
+}
+
+/** Returns profile when signed in; `null` when not authenticated or on failure (no throw). */
+export async function fetchProfileOptional(): Promise<ProfilePublic | null> {
+  try {
+    return await fetchMe()
+  } catch {
+    return null
+  }
 }
