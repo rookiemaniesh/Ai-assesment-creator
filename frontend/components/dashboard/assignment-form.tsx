@@ -45,11 +45,12 @@ function Stepper({
   onChange: (val: number) => void
 }) {
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1 rounded-full bg-zinc-100 p-0.5 md:bg-transparent md:p-0">
 
       <button
+        type="button"
         onClick={() => onChange(Math.max(1, value - 1))}
-        className="flex size-6 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 transition-colors hover:bg-zinc-100"
+        className="flex size-7 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-200 md:size-6 md:border md:border-zinc-200 md:hover:bg-zinc-100"
       >
         <Minus className="size-3" />
       </button>
@@ -57,8 +58,9 @@ function Stepper({
         {value}
       </span>
       <button
+        type="button"
         onClick={() => onChange(value + 1)}
-        className="flex size-6 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 transition-colors hover:bg-zinc-100"
+        className="flex size-7 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-200 md:size-6 md:border md:border-zinc-200 md:hover:bg-zinc-100"
       >
         <Plus className="size-3" />
       </button>
@@ -314,26 +316,27 @@ export function AssignmentForm() {
 
         {/* Question Type Table */}
         <div className="mb-2">
-          <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 pb-1.5">
+          {/* Desktop Table Headers */}
+          <div className="hidden md:grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 pb-1.5">
             <span className="text-xs font-semibold text-foreground">Question Type</span>
             <span className="text-xs font-semibold text-foreground">No. of Questions</span>
             <span className="text-xs font-semibold text-foreground">Marks</span>
             <span />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3 md:space-y-2">
             {rows.map((row) => (
               <div
                 key={row.id}
-                className="grid grid-cols-[1fr_auto_auto] items-center gap-x-3"
+                className="flex flex-col md:grid md:grid-cols-[1fr_auto_auto_auto] items-start md:items-center gap-4 md:gap-x-3 rounded-2xl bg-white p-4 md:rounded-none md:bg-transparent md:p-0 shadow-sm md:shadow-none"
               >
                 {/* Dropdown + X button inline */}
-                <div className="flex items-center gap-1.5">
+                <div className="flex w-full md:w-auto items-center gap-1.5">
                   <div className="relative flex-1">
                     <select
                       value={row.type}
                       onChange={(e) => updateRow(row.id, "type", e.target.value)}
-                      className="w-full appearance-none rounded-3xl border border-zinc-200 bg-white px-3 py-2 pr-8 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-zinc-300"
+                      className="w-full appearance-none rounded-3xl md:border md:border-zinc-200 bg-transparent md:bg-white px-0 md:px-3 py-2 pr-8 text-[15px] font-medium md:font-normal md:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-zinc-300"
                     >
                       {QUESTION_TYPES.map((t) => (
                         <option key={t} value={t}>
@@ -353,34 +356,46 @@ export function AssignmentForm() {
                   </div>
                   {/* Remove — sits immediately beside the dropdown chevron */}
                   <button
+                    type="button"
                     onClick={() => removeRow(row.id)}
                     className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-zinc-100 hover:text-foreground"
                   >
-                    <X className="size-3.5" />
+                    <X className="size-3.5 md:size-3.5" />
                   </button>
                 </div>
 
-                {/* Count stepper */}
-                <Stepper
-                  value={row.count}
-                  onChange={(v) => updateRow(row.id, "count", v)}
-                />
+                <div className="flex w-full md:w-auto items-center justify-between md:justify-end gap-3 px-2 md:px-0 mt-[-8px] md:mt-0">
+                  {/* Count stepper */}
+                  <div className="flex flex-col md:flex-row items-center gap-2 md:gap-0">
+                    <span className="text-[11px] font-medium text-zinc-600 md:hidden pb-1">No. of Questions</span>
+                    <Stepper
+                      value={row.count}
+                      onChange={(v) => updateRow(row.id, "count", v)}
+                    />
+                  </div>
 
-                {/* Marks stepper */}
-                <Stepper
-                  value={row.marks}
-                  onChange={(v) => updateRow(row.id, "marks", v)}
-                />
+                  {/* Marks stepper */}
+                  <div className="flex flex-col md:flex-row items-center gap-2 md:gap-0">
+                    <span className="text-[11px] font-medium text-zinc-600 md:hidden pb-1">Marks</span>
+                    <Stepper
+                      value={row.marks}
+                      onChange={(v) => updateRow(row.id, "marks", v)}
+                    />
+                  </div>
+                </div>
               </div>
             ))}
           </div>
 
           {/* Add row */}
           <button
+            type="button"
             onClick={addRow}
-            className="mt-3 flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="mt-4 flex items-center gap-2 text-xs font-bold text-zinc-900 transition-colors hover:text-zinc-600"
           >
-            <Plus className="size-4" />
+            <div className="flex size-6 items-center justify-center rounded-full bg-zinc-900 text-white leading-none pb-[1px]">
+              <Plus className="size-3" strokeWidth={3} />
+            </div>
             Add Question Type
           </button>
         </div>

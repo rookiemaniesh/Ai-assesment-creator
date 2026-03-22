@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Header } from "@/components/dashboard/header"
+import { MobileHeader } from "@/components/dashboard/mobile-header"
+import { MobileNav } from "@/components/dashboard/mobile-nav"
+import { MobileFab } from "@/components/dashboard/mobile-fab"
 import { AssignmentCard } from "@/components/dashboard/assignment-card"
 import { ChevronDown, Search, Plus } from "lucide-react"
 import { WS_BASE_URL, fetchAssignments, type AssignmentListItem } from "@/lib/api"
@@ -83,23 +86,34 @@ export default function DashboardPage() {
 
   return (
     <div className="relative min-h-screen bg-zinc-200">
-      {/* Floating Sidebar — always visible, overlays the main content */}
-      <Sidebar
-        activeItem={activeNav}
-        onNavChange={setActiveNav}
-        schoolName={profile?.schoolName}
-        schoolAddress={profile?.schoolAddress}
+      {/* Mobile Top Header (fixed, md:hidden) */}
+      <MobileHeader
+        userDisplayName={profile?.username}
         profileLoading={profileLoading}
+        onMenuClick={() => setActiveNav("Menu")} // Optional: open a mobile menu
       />
 
-      {/* Main content — full width, sidebar floats on top */}
-      <div className="min-h-screen pl-[284px] pr-4 pt-4 pb-24">
-        {/* Floating Header */}
-        <Header
-          title="Assignment"
-          userDisplayName={profile?.username}
+      {/* Floating Sidebar — always visible on desktop, hidden on mobile */}
+      <div className="hidden md:block">
+        <Sidebar
+          activeItem={activeNav}
+          onNavChange={setActiveNav}
+          schoolName={profile?.schoolName}
+          schoolAddress={profile?.schoolAddress}
           profileLoading={profileLoading}
         />
+      </div>
+
+      {/* Main content — full width on mobile, sidebar floats on top desktop */}
+      <div className="min-h-screen pl-4 md:pl-[284px] pr-4 pt-20 md:pt-4 pb-[120px] md:pb-24">
+        {/* Floating Header (Desktop) */}
+        <div className="hidden md:block">
+          <Header
+            title="Assignment"
+            userDisplayName={profile?.username}
+            profileLoading={profileLoading}
+          />
+        </div>
 
         {/* Content Area */}
         {loading ? (
@@ -117,7 +131,7 @@ export default function DashboardPage() {
             </Link>
           </main>
         ) : assignments.length === 0 ? (
-          <main className="mt-4 flex max-h-screen flex-col items-center justify-center rounded-2xl bg-[#EBEBEB] p-5">
+          <main className="md:mt-4 flex min-h-[calc(100vh-140px)] flex-col items-center justify-center md:rounded-2xl bg-zinc-200 md:bg-[#EBEBEB] p-5">
             <div className="relative mb-6">
               <svg width="220" height="220" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-sm">
                 {/* Background blob/circle */}
@@ -230,9 +244,9 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Floating Create Assignment Button */}
+      {/* Floating Create Assignment Button (Desktop) */}
       {!loading && !error && assignments.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 pl-[244px]">
+        <div className="hidden md:flex fixed bottom-6 left-1/2 -translate-x-1/2 z-20 pl-[244px]">
           <button
             onClick={() => router.push("/create-assignment")}
             className="flex items-center gap-2 rounded-full bg-zinc-900 px-5 py-3 text-sm font-medium text-white shadow-lg transition-all hover:bg-zinc-700 hover:shadow-xl"
@@ -242,6 +256,10 @@ export default function DashboardPage() {
           </button>
         </div>
       )}
+
+      {/* Mobile Fixed Navigation & FAB (hidden on desktop natively via component) */}
+      <MobileNav activeItem={activeNav} onNavChange={setActiveNav} />
+      <MobileFab />
     </div>
   )
 }

@@ -6,6 +6,7 @@ import { ArrowLeft, Download, FileText } from "lucide-react"
 import { fetchAssignment, fetchAssignmentResult, type AssignmentDetail, type QuestionPaperResult } from "@/lib/api"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Header } from "@/components/dashboard/header"
+import { MobileHeader } from "@/components/dashboard/mobile-header"
 import { useProfile } from "@/hooks/use-profile"
 
 export default function AssignmentViewPage() {
@@ -60,8 +61,14 @@ export default function AssignmentViewPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-zinc-200 print:bg-white print:min-h-0">
-      <div className="print:hidden">
+    <div className="relative min-h-screen bg-[#C9C9C9] md:bg-zinc-200 print:bg-white print:min-h-0">
+      {/* Mobile Top Header */}
+      <MobileHeader
+        userDisplayName={profile?.username}
+        profileLoading={profileLoading}
+      />
+
+      <div className="hidden md:block print:hidden">
         <Sidebar
           activeItem="Assignments"
           onNavChange={() => {}}
@@ -71,8 +78,8 @@ export default function AssignmentViewPage() {
         />
       </div>
 
-      <div className="min-h-screen pl-[284px] pr-4 pt-4 pb-24 print:p-0 print:m-0 print:min-h-0">
-        <div className="print:hidden">
+      <div className="min-h-screen flex flex-col pl-4 md:pl-[284px] pr-4 pt-20 md:pt-4 pb-6 md:pb-24 print:p-0 print:m-0 print:min-h-0">
+        <div className="hidden md:block print:hidden">
           <Header
             title="View Assignment"
             userDisplayName={profile?.username}
@@ -80,12 +87,24 @@ export default function AssignmentViewPage() {
           />
         </div>
 
-        <main className="mt-4 rounded-2xl bg-zinc-100 p-5 min-h-[calc(100vh-100px)] print:m-0 print:p-0 print:bg-white print:min-h-0">
-          {/* Top Bar Navigation & Actions */}
-          <div className="flex items-center justify-between mb-6 print:hidden">
+        <main className="md:mt-4 rounded-2xl bg-zinc-100 md:bg-white p-5 min-h-[calc(100vh-100px)] print:m-0 print:p-0 print:bg-white print:min-h-0">
+          
+          {/* Mobile Page Title area (matches the image) */}
+          <div className="flex md:hidden items-center justify-center relative mb-6 w-full max-w-2xl mx-auto">
             <button
               onClick={() => router.back()}
-              className="flex items-center gap-2 text-sm text-zinc-600 hover:text-zinc-900 transition-colors"
+              className="absolute left-0 flex size-10 items-center justify-center rounded-full bg-[#E0E0E0] text-zinc-800 transition-colors hover:bg-[#D0D0D0]"
+            >
+              <ArrowLeft className="size-5" />
+            </button>
+            <span className="text-[16px] font-bold text-zinc-900">View Assignment</span>
+          </div>
+
+          {/* Top Bar Navigation & Actions */}
+          <div className="flex items-center justify-end md:justify-between mb-6 print:hidden">
+            <button
+              onClick={() => router.back()}
+              className="hidden md:flex items-center gap-2 text-sm text-zinc-600 hover:text-zinc-900 transition-colors"
             >
               <ArrowLeft className="size-4" />
               Back to Assignments
