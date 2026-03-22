@@ -78,6 +78,20 @@ const AssignmentSchema = new mongoose_1.Schema({
             message: 'At least one question type must be selected',
         },
     },
+    questionSpec: {
+        type: [
+            {
+                questionType: {
+                    type: String,
+                    enum: ['mcq', 'short', 'long', 'true-false'],
+                    required: true,
+                },
+                count: { type: Number, required: true, min: 1 },
+                marksPerQuestion: { type: Number, required: true, min: 1 },
+            },
+        ],
+        required: false,
+    },
     difficulty: {
         type: String,
         enum: ['easy', 'medium', 'hard', 'mixed'],

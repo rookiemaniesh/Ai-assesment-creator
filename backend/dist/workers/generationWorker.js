@@ -7,6 +7,7 @@ const bullmq_1 = require("bullmq");
 const axios_1 = __importDefault(require("axios"));
 const redis_1 = require("../config/redis");
 const Assignment_1 = require("../models/Assignment");
+const Profile_1 = require("../models/Profile");
 const QuestionPaper_1 = require("../models/QuestionPaper");
 const wsServer_1 = require("../ws/wsServer");
 const env_1 = require("../config/env");
@@ -31,13 +32,19 @@ const worker = new bullmq_1.Worker('assignment-generation', async (job) => {
             progress: 10,
         });
     }
+    const profile = await Profile_1.Profile.findById(assignment.profileId).select('schoolName schoolAddress');
     // 2. Call PydanticAI microservice
     const response = await axios_1.default.post(`${env_1.env.AI_SERVICE_URL}/generate`, {
         title: assignment.title,
         subject: assignment.subject,
+        schoolName: profile?.schoolName ?? '',
+        schoolAddress: profile?.schoolAddress ?? '',
         totalMarks: assignment.totalMarks,
         numQuestions: assignment.numQuestions,
         questionTypes: assignment.questionTypes,
+        ...(assignment.questionSpec?.length
+            ? { questionSpec: assignment.questionSpec }
+            : {}),
         difficulty: assignment.difficulty,
         additionalInstructions: assignment.additionalInstructions ?? '',
         fileText: assignment.fileText ?? '',

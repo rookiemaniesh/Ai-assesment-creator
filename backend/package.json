@@ -8,7 +8,9 @@
     "dev:worker": "ts-node-dev --respawn --transpile-only src/workers/generationWorker.ts",
     "dev:all": "concurrently -n server,worker -c cyan,magenta \"npm run dev\" \"npm run dev:worker\"",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "start:worker": "node dist/workers/generationWorker.js",
+    "start:all": "concurrently -n server,worker -c cyan,magenta \"npm start\" \"npm run start:worker\""
   },
   "keywords": [],
   "author": "",

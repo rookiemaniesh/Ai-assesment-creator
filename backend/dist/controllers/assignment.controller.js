@@ -13,7 +13,13 @@ const QuestionPaper_1 = require("../models/QuestionPaper");
 const assignmentQueue_1 = require("../queues/assignmentQueue");
 const mongoose_1 = __importDefault(require("mongoose"));
 // ─── Validation schema ───────────────────────────────────────────────────────
-const CreateAssignmentSchema = zod_1.z.object({
+const QuestionSpecEntrySchema = zod_1.z.object({
+    questionType: zod_1.z.enum(['mcq', 'short', 'long', 'true-false']),
+    count: zod_1.z.coerce.number().int().min(1),
+    marksPerQuestion: zod_1.z.coerce.number().int().min(1),
+});
+const CreateAssignmentSchema = zod_1.z
+    .object({
     title: zod_1.z.string().min(1, 'Title is required').max(200),
     subject: zod_1.z.string().min(1, 'Subject is required'),
     dueDate: zod_1.z.string().refine((d) => !isNaN(Date.parse(d)), {
@@ -33,6 +39,42 @@ const CreateAssignmentSchema = zod_1.z.object({
         .default('mixed'),
     additionalInstructions: zod_1.z.string().max(1000).optional(),
     clientId: zod_1.z.string().optional(), // WebSocket push target
+    /** JSON array from multipart: exact counts/marks per type from the form */
+    questionSpec: zod_1.z.preprocess((raw) => {
+        if (raw == null || raw === '')
+            return undefined;
+        if (typeof raw === 'string') {
+            try {
+                return JSON.parse(raw);
+            }
+            catch {
+                return undefined;
+            }
+        }
+        if (Array.isArray(raw))
+            return raw;
+        return undefined;
+    }, zod_1.z.array(QuestionSpecEntrySchema).optional()),
+})
+    .superRefine((data, ctx) => {
+    if (!data.questionSpec?.length)
+        return;
+    const n = data.questionSpec.reduce((s, x) => s + x.count, 0);
+    const m = data.questionSpec.reduce((s, x) => s + x.count * x.marksPerQuestion, 0);
+    if (n !== data.numQuestions) {
+        ctx.addIssue({
+            code: zod_1.z.ZodIssueCode.custom,
+            message: `questionSpec counts (${n}) must match numQuestions (${data.numQuestions})`,
+            path: ['questionSpec'],
+        });
+    }
+    if (m !== data.totalMarks) {
+        ctx.addIssue({
+            code: zod_1.z.ZodIssueCode.custom,
+            message: `questionSpec marks (${m}) must match totalMarks (${data.totalMarks})`,
+            path: ['questionSpec'],
+        });
+    }
 });
 // ─── Controllers ─────────────────────────────────────────────────────────────
 /**

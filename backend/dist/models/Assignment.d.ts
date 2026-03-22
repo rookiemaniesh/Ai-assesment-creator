@@ -2,6 +2,12 @@ import mongoose, { Document, Types } from 'mongoose';
 export type QuestionType = 'mcq' | 'short' | 'long' | 'true-false';
 export type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed';
 export type AssignmentStatus = 'pending' | 'processing' | 'completed' | 'failed';
+/** Per-row breakdown from the create form (counts and marks each) — drives AI generation. */
+export interface QuestionSpecEntry {
+    questionType: QuestionType;
+    count: number;
+    marksPerQuestion: number;
+}
 export interface IAssignment extends Document {
     /** Owner profile (teacher / school account) */
     profileId: Types.ObjectId;
@@ -11,6 +17,8 @@ export interface IAssignment extends Document {
     totalMarks: number;
     numQuestions: number;
     questionTypes: QuestionType[];
+    /** When set, the AI must follow these counts and marks per question exactly. */
+    questionSpec?: QuestionSpecEntry[];
     difficulty: Difficulty;
     additionalInstructions?: string;
     fileUrl?: string;
