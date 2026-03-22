@@ -57,7 +57,10 @@ app.add_middleware(
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "model": os.getenv("OLLAMA_MODEL", "llama3.2")}
+    return {
+        "status": "ok",
+        "model": os.getenv("GROQ_MODEL", "llama-3.1-8b-instant"),
+    }
 
 
 @app.post("/generate", response_model=None)

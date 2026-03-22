@@ -1,0 +1,2 @@
+# Used if Railway builds with Nixpacks instead of Docker (root directory = ai-server)
+web: uvicorn main:app --host 0.0.0.0 --port $PORT
