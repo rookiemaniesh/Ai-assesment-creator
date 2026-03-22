@@ -58,7 +58,7 @@ export function Sidebar({ activeItem = "Assignments", onNavChange }: SidebarProp
   ]
 
   return (
-    <aside className="fixed left-4 top-4 bottom-4 z-30 flex w-[220px] flex-col rounded-2xl bg-white shadow-xl">
+    <aside className="fixed left-4 top-4 bottom-4 z-30 flex w-[260px] flex-col rounded-2xl bg-white shadow-xl">
       {/* Logo */}
       <div className="flex items-center gap-2 px-4 py-5">
         <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-red-600">
@@ -115,13 +115,13 @@ export function Sidebar({ activeItem = "Assignments", onNavChange }: SidebarProp
       </div>
 
       {/* School Card */}
-      <div className="mx-3 mb-4 flex items-center gap-3 rounded-xl bg-zinc-800 p-3">
+      <div className="mx-3 mb-4 flex items-center gap-3 rounded-xl bg-zinc-200 p-3">
         <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-amber-200">
           <span className="text-base font-bold text-amber-700">D</span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="truncate text-sm font-semibold text-white">Delhi Public School</p>
-          <p className="truncate text-xs text-zinc-400">Bokaro Steel City</p>
+          <p className="truncate text-sm font-semibold text-black">Delhi Public School</p>
+          <p className="truncate text-xs text-zinc-700">Bokaro Steel City</p>
         </div>
       </div>
     </aside>

@@ -15,7 +15,7 @@ export default function CreateAssignmentPage() {
       <Sidebar activeItem="Assignments" onNavChange={() => { }} />
 
       {/* Sticky top bar — header stays fixed while page scrolls */}
-      <div className="sticky top-0 z-20 pl-[244px] pr-4 pt-4 pb-2  backdrop-blur-md">
+      <div className="sticky top-0 z-20 pl-[284px] pr-4 pt-4 pb-2  backdrop-blur-md">
         <Header
           title="Assignment"
           showBackButton
