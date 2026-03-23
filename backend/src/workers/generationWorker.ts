@@ -1,5 +1,11 @@
 import { Worker, Job } from 'bullmq';
 import axios from 'axios';
+import fs from 'fs/promises';
+import path from 'path';
+// `pdf-parse` ships with `export =` typings; cast to avoid TS import-shape issues.
+const pdfParse = require('pdf-parse') as (
+  dataBuffer: Buffer
+) => Promise<{ text: string }>;
 import { bullMQConnection } from '../config/redis';
 import { Assignment } from '../models/Assignment';
 import { Profile } from '../models/Profile';
@@ -40,6 +46,28 @@ const worker = new Worker<AssignmentJobData, void, AssignmentJobName>(
     const profile = await Profile.findById(assignment.profileId).select(
       'schoolName schoolAddress'
     );
+
+    // If a PDF was uploaded, extract its plain text so the AI service has context.
+    // (frontend -> backend stores `fileUrl`; AI prompt uses `fileText`.)
+    if (assignment.fileUrl && !assignment.fileText?.trim()) {
+      try {
+        const resolvedPath = path.isAbsolute(assignment.fileUrl)
+          ? assignment.fileUrl
+          : path.resolve(__dirname, '..', '..', assignment.fileUrl);
+
+        const pdfBuffer = await fs.readFile(resolvedPath);
+        const parsed = await pdfParse(pdfBuffer);
+      
+
+        // Keep storage reasonable; prompt builder already truncates for context.
+        assignment.fileText = (parsed.text ?? '').toString().slice(0, 20000);
+        await assignment.save();
+      } catch (err) {
+        console.error('PDF text extraction failed:', err);
+        assignment.fileText = '';
+        await assignment.save();
+      }
+    }
 
     // 2. Call PydanticAI microservice
     const response = await axios.post(

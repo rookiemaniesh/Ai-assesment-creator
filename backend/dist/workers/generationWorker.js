@@ -5,6 +5,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const bullmq_1 = require("bullmq");
 const axios_1 = __importDefault(require("axios"));
+const promises_1 = __importDefault(require("fs/promises"));
+const path_1 = __importDefault(require("path"));
+// `pdf-parse` ships with `export =` typings; cast to avoid TS import-shape issues.
+const pdfParse = require('pdf-parse');
 const redis_1 = require("../config/redis");
 const Assignment_1 = require("../models/Assignment");
 const Profile_1 = require("../models/Profile");
@@ -33,6 +37,25 @@ const worker = new bullmq_1.Worker('assignment-generation', async (job) => {
         });
     }
     const profile = await Profile_1.Profile.findById(assignment.profileId).select('schoolName schoolAddress');
+    // If a PDF was uploaded, extract its plain text so the AI service has context.
+    // (frontend -> backend stores `fileUrl`; AI prompt uses `fileText`.)
+    if (assignment.fileUrl && !assignment.fileText?.trim()) {
+        try {
+            const resolvedPath = path_1.default.isAbsolute(assignment.fileUrl)
+                ? assignment.fileUrl
+                : path_1.default.resolve(__dirname, '..', '..', assignment.fileUrl);
+            const pdfBuffer = await promises_1.default.readFile(resolvedPath);
+            const parsed = await pdfParse(pdfBuffer);
+            // Keep storage reasonable; prompt builder already truncates for context.
+            assignment.fileText = (parsed.text ?? '').toString().slice(0, 20000);
+            await assignment.save();
+        }
+        catch (err) {
+            console.error('PDF text extraction failed:', err);
+            assignment.fileText = '';
+            await assignment.save();
+        }
+    }
     // 2. Call PydanticAI microservice
     const response = await axios_1.default.post(`${env_1.env.AI_SERVICE_URL}/generate`, {
         title: assignment.title,

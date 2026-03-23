@@ -32,6 +32,7 @@ _agent = Agent(
     system_prompt=(
         "You are an expert teacher and exam paper setter. "
         "You MUST obey the user's question counts, section layout, marks per question, and total marks exactly. "
+        "When parsed PDF context is provided, ground question stems and answers in that context (do not invent facts). "
         "Never add or remove questions relative to the specification. "
         "Output only structured data matching the QuestionPaper schema — no markdown fences, no prose outside JSON."
     ),

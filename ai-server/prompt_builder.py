@@ -43,9 +43,12 @@ def build_prompt(req: GenerateRequest) -> str:
         excerpt = req.file_text.strip()[:4000]
         context_block = f"""
 ---
-REFERENCE MATERIAL (primary source for what to ask about):
+PARSED PDF CONTEXT (primary source for factual details):
 {excerpt}
 ---
+When generating the question stems and answers, only use factual details that appear in this parsed PDF context.
+If the context does not explicitly contain a required detail, prefer general exam-style wording related to the subject
+instead of inventing facts.
 """
 
     instructions_block = ""
